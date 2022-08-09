@@ -20,14 +20,17 @@
 import fs from "fs";
 import Path from "path";
 
-export default function Cacher(defaultFolder, isVerbose = false) {
+export default function Cacher(
+  defaultFolder: string,
+  isVerbose: boolean = false
+) {
   let VERBOSE = isVerbose;
   if (!fs.existsSync(defaultFolder)) {
     fs.mkdirSync(defaultFolder);
   }
   const folder = defaultFolder;
   return {
-    save: function (filename, object) {
+    save: function (filename: string, object: any) {
       if (VERBOSE) {
         console.log("Saving", filename);
       }
@@ -45,7 +48,7 @@ export default function Cacher(defaultFolder, isVerbose = false) {
      * @param filename
      * @returns {any}
      */
-    load: function (filename) {
+    load: function (filename: string) {
       let filePath = Path.join(folder, filename + ".json");
       if (fs.existsSync(filePath)) {
         return JSON.parse(
@@ -55,7 +58,7 @@ export default function Cacher(defaultFolder, isVerbose = false) {
         return null;
       }
     },
-    exists: function (filename) {
+    exists: function (filename: string) {
       let filePath = Path.join(folder, filename + ".json");
       return fs.existsSync(filePath);
     },

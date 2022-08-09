@@ -1,8 +1,8 @@
 {
   "name": "simple-object-to-json-cacher",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Saves JS Object synchronously to plain text JSON file, and loads. (Basic Simple Unencrypted Serialisation)",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
   "homepage": "https://github.com/acctech/simple-object-to-json-cacher",
   "repository": {
     "type": "git",
@@ -10,6 +10,7 @@
   },
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "build": "tsc",
     "example": "node ./example/index.js"
   },
   "keywords": [
@@ -21,8 +22,9 @@
   ],
   "author": "Danny Falero (Software Engineer, CEM)",
   "license": "ISC",
-  "type": "module",
   "devDependencies": {
-    "jest": "^27.0.4"
+    "@types/node": "^18.6.5",
+    "jest": "^27.0.4",
+    "typescript": "^4.7.4"
   }
 }
