@@ -11,7 +11,8 @@
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "build": "tsc",
-    "example": "node ./example/index.js"
+    "example": "node ./example/index.js",
+    "publish": "npm version minor --force && npm publish"
   },
   "keywords": [
     "cem",
