@@ -16,7 +16,7 @@
  *
  * https://raw.githubusercontent.com/acctech/kingjames.bible/master/kjv-src/kjv-1769.txt
  */
-export default function Cacher(defaultFolder: string, isVerbose?: boolean): {
+declare const _default: (defaultFolder: string, isVerbose?: boolean) => {
     save: (filename: string, object: any) => void;
     /**
      * Load JSON file. Filename does not need path. Filename should be only the file name without extension.
@@ -27,3 +27,4 @@ export default function Cacher(defaultFolder: string, isVerbose?: boolean): {
     exists: (filename: string) => boolean;
     listDirectory: () => string[];
 };
+export = _default;

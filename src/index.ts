@@ -20,10 +20,8 @@
 import fs from "fs";
 import Path from "path";
 
-export default function Cacher(
-  defaultFolder: string,
-  isVerbose: boolean = false
-) {
+// Using TS syntax to export function https://stackoverflow.com/a/55945250
+export = function Cacher(defaultFolder: string, isVerbose: boolean = false) {
   let VERBOSE = isVerbose;
   if (!fs.existsSync(defaultFolder)) {
     fs.mkdirSync(defaultFolder);
@@ -66,4 +64,4 @@ export default function Cacher(
       return fs.readdirSync(folder);
     },
   };
-}
+};

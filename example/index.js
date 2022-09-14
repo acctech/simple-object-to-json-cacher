@@ -1,10 +1,10 @@
-import Cacher from "../src/index.js";
+const Cacher = require("../dist/index.js");
 
 let exampleObjectToSave = {
-    id: 0,
-    name: "Jeshua",
-    dob: "0/0/0"
-}
+  id: 0,
+  name: "Jeshua",
+  dob: "0/0/0",
+};
 
 let CACHEFOLDERPATH = "./example/folderForCachedObjects";
 let cacher = Cacher(CACHEFOLDERPATH);
