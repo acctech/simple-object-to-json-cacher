@@ -1,6 +1,6 @@
 {
   "name": "simple-object-to-json-cacher",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Saves JS Object synchronously to plain text JSON file, and loads. (Basic Simple Unencrypted Serialisation)",
   "main": "./dist/index.js",
   "homepage": "https://github.com/acctech/simple-object-to-json-cacher",
@@ -12,7 +12,7 @@
     "test": "jest --coverage",
     "build": "tsc",
     "example": "node ./example/index.js",
-    "deploy": "npm version patch --force && npm publish"
+    "deploy": "npm run build && npm run test && npm version patch --force && npm publish"
   },
   "keywords": [
     "cem",
