@@ -8,16 +8,9 @@ const testContentObject = [
   { id: 3, name: "Todd" },
 ];
 
-function deleteAssetsFolder() {
-  if (fs.existsSync(folderName)) {
-    fs.rmSync(folderName, { recursive: true });
-  }
-}
-
-// beforeEach(() => {
-//   deleteAssetsFolder();
-// fs.rmSync("./" + folderName + "/testObject.json");
-// });
+afterAll(() => {
+  fs.rmSync(folderName, { recursive: true });
+});
 
 describe("Save Cache function", () => {
   let testObjectName = "testObject";
