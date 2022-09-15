@@ -9,7 +9,7 @@
     "url": "git+https://github.com/acctech/simple-object-to-json-cacher.git"
   },
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test": "jest --coverage",
     "build": "tsc",
     "example": "node ./example/index.js",
     "deploy": "npm version patch --force && npm publish"
