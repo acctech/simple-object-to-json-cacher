@@ -22,6 +22,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+function recStringifyEachObjectInArray(arrayOrObject) {
+    if (Array.isArray(arrayOrObject)) {
+        return arrayOrObject.map((el) => {
+            return recStringifyEachObjectInArray(el);
+        });
+    }
+    else if (typeof arrayOrObject === "object") {
+        return JSON.stringify(arrayOrObject);
+    }
+    else if (typeof arrayOrObject === "string") {
+        return arrayOrObject;
+    }
+}
 module.exports = function Cacher(defaultFolder, isVerbose = false) {
     let VERBOSE = isVerbose;
     if (!fs_1.default.existsSync(defaultFolder)) {
@@ -33,7 +46,33 @@ module.exports = function Cacher(defaultFolder, isVerbose = false) {
             if (VERBOSE) {
                 console.log("Saving", filename);
             }
-            fs_1.default.writeFileSync(path_1.default.join(folder, filename + ".json"), JSON.stringify(object, null, 2), { encoding: "utf8", flag: "w" });
+            let serialised;
+            if (typeof object === "string") {
+                serialised = object;
+            }
+            else {
+                try {
+                    serialised = JSON.stringify(object, null, 2);
+                }
+                catch (err) {
+                    // If object is an array
+                    if (Array.isArray(object)) {
+                        serialised =
+                            "[" +
+                                object
+                                    .map((el) => recStringifyEachObjectInArray(el))
+                                    .join(",") +
+                                "]";
+                    }
+                    else {
+                        throw err;
+                    }
+                }
+            }
+            fs_1.default.writeFileSync(path_1.default.join(folder, filename + ".json"), serialised, {
+                encoding: "utf8",
+                flag: "w",
+            });
             if (VERBOSE) {
                 console.log("Saved", filename);
             }

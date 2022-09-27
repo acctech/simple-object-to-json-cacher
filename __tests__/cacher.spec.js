@@ -40,6 +40,38 @@ describe("Save Cache function", () => {
     ).toEqual(JSON.stringify(testContentObject));
     fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
   });
+
+  test("It should be able to save massive file", () => {
+    let cacher = Cacher("./" + folderName);
+
+    let testContentObjectHuge = [];
+    for (let i = 0; i < 10000000; i++) {
+      let object = {
+        id: i,
+        name: Math.random().toString(36).substring(7),
+        randomNum: Math.random(),
+      };
+      testContentObjectHuge.push(object);
+    }
+    cacher.save(testObjectName, testContentObjectHuge);
+
+    let serialisedString =
+      "[" +
+      testContentObjectHuge.map((el) => JSON.stringify(el)).join(",") +
+      "]";
+
+    expect(
+      JSON.stringify(
+        JSON.parse(
+          fs.readFileSync(
+            "./" + folderName + "/" + testObjectName + ".json",
+            "utf8"
+          )
+        )
+      )
+    ).toEqual(serialisedString);
+    fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
+  });
 });
 
 describe("Load Cache function", () => {
