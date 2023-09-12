@@ -17,13 +17,13 @@
  * https://raw.githubusercontent.com/acctech/kingjames.bible/master/kjv-src/kjv-1769.txt
  */
 declare const _default: (defaultFolder: string, isVerbose?: boolean) => {
-    save: (filename: string, object: any) => void;
+    save: (filename: string, object: any, forceStream?: boolean) => Promise<void>;
     /**
      * Load JSON file. Filename does not need path. Filename should be only the file name without extension.
      * @param filename
      * @returns {any}
      */
-    load: (filename: string) => any;
+    load: (filename: string, forceStream?: boolean) => Promise<any>;
     exists: (filename: string) => boolean;
     listDirectory: () => string[];
 };

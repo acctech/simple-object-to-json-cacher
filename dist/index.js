@@ -17,11 +17,22 @@
  *
  * https://raw.githubusercontent.com/acctech/kingjames.bible/master/kjv-src/kjv-1769.txt
  */
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const big_json_1 = __importDefault(require("big-json"));
+const json_stream_stringify_1 = require("json-stream-stringify");
 module.exports = function Cacher(defaultFolder, isVerbose = false) {
     let VERBOSE = isVerbose;
     if (!fs_1.default.existsSync(defaultFolder)) {
@@ -29,28 +40,107 @@ module.exports = function Cacher(defaultFolder, isVerbose = false) {
     }
     const folder = defaultFolder;
     return {
-        save: function (filename, object) {
-            if (VERBOSE) {
-                console.log("Saving", filename);
-            }
-            fs_1.default.writeFileSync(path_1.default.join(folder, filename + ".json"), JSON.stringify(object, null, 2), { encoding: "utf8", flag: "w" });
-            if (VERBOSE) {
-                console.log("Saved", filename);
-            }
+        save: function (filename, object, forceStream = false) {
+            return __awaiter(this, void 0, void 0, function* () {
+                if (VERBOSE) {
+                    console.log("Saving", filename);
+                }
+                let filePath = path_1.default.join(folder, filename + ".json");
+                if (forceStream !== true) {
+                    try {
+                        // Try the old way for speed.
+                        fs_1.default.writeFileSync(filePath, JSON.stringify(object, null, 2), {
+                            encoding: "utf8",
+                            flag: "w",
+                        });
+                        return;
+                    }
+                    catch (e) {
+                        if (e.message === "Invalid string length" &&
+                            e.name === "RangeError") {
+                            forceStream = true;
+                        }
+                        else {
+                            throw e;
+                        }
+                    }
+                }
+                if (forceStream === true) {
+                    console.log("Trying to save", filename, "as stream");
+                    return yield new Promise((resolve, reject) => {
+                        // Create a JsonStreamStringify instance to serialize the object
+                        const stringifyStream = new json_stream_stringify_1.JsonStreamStringify(object);
+                        // Create a write stream to save the JSON data
+                        const writeStream = fs_1.default.createWriteStream(filePath, {
+                            encoding: "utf8",
+                        });
+                        stringifyStream.pipe(writeStream);
+                        writeStream.on("finish", () => {
+                            writeStream.end();
+                            if (VERBOSE) {
+                                console.log("Saved", filename);
+                            }
+                            resolve();
+                        });
+                        writeStream.on("error", (error) => {
+                            reject(error);
+                        });
+                    });
+                }
+            });
         },
         /**
          * Load JSON file. Filename does not need path. Filename should be only the file name without extension.
          * @param filename
          * @returns {any}
          */
-        load: function (filename) {
-            let filePath = path_1.default.join(folder, filename + ".json");
-            if (fs_1.default.existsSync(filePath)) {
-                return JSON.parse(fs_1.default.readFileSync(filePath, { encoding: "utf8" }).toString());
-            }
-            else {
-                return null;
-            }
+        load: function (filename, forceStream = false) {
+            return __awaiter(this, void 0, void 0, function* () {
+                let filePath = path_1.default.join(folder, filename + ".json");
+                if (fs_1.default.existsSync(filePath)) {
+                    if (forceStream !== true) {
+                        try {
+                            // Try the normal way first for speed.
+                            return JSON.parse(fs_1.default.readFileSync(filePath, { encoding: "utf8" }).toString());
+                        }
+                        catch (e) {
+                            if (e.message === "Invalid string length" &&
+                                e.name === "RangeError") {
+                                forceStream = true;
+                            }
+                            else {
+                                throw e;
+                            }
+                        }
+                    }
+                    if (forceStream === true) {
+                        console.log("Trying to load", filename, "as stream");
+                        let dataToReturn = yield new Promise((resolve, reject) => {
+                            let data = [];
+                            const readStream = fs_1.default.createReadStream(filePath);
+                            const parseStream = big_json_1.default.createParseStream();
+                            parseStream.on("data", function (pojo) {
+                                data.push(pojo);
+                            });
+                            readStream.pipe(parseStream);
+                            parseStream.on("end", function () {
+                                resolve(data);
+                            });
+                            parseStream.on("error", function (error) {
+                                reject(error);
+                            });
+                        });
+                        // If data contains two arrays, then return the children array
+                        if (dataToReturn.length === 1 && Array.isArray(dataToReturn[0])) {
+                            dataToReturn = dataToReturn[0];
+                        }
+                        return dataToReturn;
+                    }
+                }
+                else {
+                    return null;
+                }
+            });
         },
         exists: function (filename) {
             let filePath = path_1.default.join(folder, filename + ".json");

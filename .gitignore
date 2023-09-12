@@ -162,4 +162,4 @@ out
 .pnp.*
 
 .DS_Store
-/testfolder
+testfolder/

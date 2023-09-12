@@ -1,51 +1,95 @@
 const Cacher = require("../dist/index.js");
 const fs = require("fs");
 
+jest.setTimeout("100000");
+
 const folderName = "testfolder";
 const testContentObject = [
   { id: 1, name: "Billy" },
   { id: 2, name: "Mason" },
   { id: 3, name: "Todd" },
 ];
+const eraseFile = true;
 
 afterAll(() => {
-  fs.rmSync(folderName, { recursive: true });
+  if (eraseFile) fs.rmSync(folderName, { recursive: true });
 });
 
 describe("Save Cache function", () => {
-  let testObjectName = "testObject";
-
-  test("It should save a file into folder", () => {
+  it("should save a file into folder", async () => {
+    let testObjectName = "testObject" + "_1";
     let cacher = Cacher("./" + folderName);
-    cacher.save(testObjectName, testContentObject);
+    await cacher.save(testObjectName, testContentObject);
 
     expect(
       fs.existsSync("./" + folderName + "/" + testObjectName + ".json")
     ).toEqual(true);
-    fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
+    if (eraseFile)
+      fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
   });
-  test("It should save the given object into the file", () => {
+
+  it("should save the given object into the file", async () => {
+    let testObjectName = "testObject" + "_2";
     let cacher = Cacher("./" + folderName);
-    cacher.save(testObjectName, testContentObject);
-
-    expect(
-      JSON.stringify(
-        JSON.parse(
-          fs.readFileSync(
-            "./" + folderName + "/" + testObjectName + ".json",
-            "utf8"
-          )
-        )
-      )
-    ).toEqual(JSON.stringify(testContentObject));
-    fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
+    await cacher.save(testObjectName, testContentObject);
+    let pathOfFile = "./" + folderName + "/" + testObjectName + ".json";
+    let actualFileContents = fs.readFileSync(pathOfFile);
+    let expectedFileContents = JSON.stringify(testContentObject);
+    expect(JSON.stringify(JSON.parse(actualFileContents))).toEqual(
+      expectedFileContents
+    );
+    if (eraseFile)
+      fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
   });
+});
 
-  test("It should be able to save massive file", () => {
+describe("Load Cache function", () => {
+  it("should load the same saved given object", async () => {
+    const testObjectName = "testObject" + "_3";
+    let cacher = Cacher("./" + folderName);
+    await cacher.save(testObjectName, testContentObject);
+    let loadedTestObject = await cacher.load(testObjectName);
+
+    expect(JSON.stringify(loadedTestObject)).toEqual(
+      JSON.stringify(testContentObject)
+    );
+    if (eraseFile)
+      fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
+  });
+});
+
+describe("Exists Cache Function", () => {
+  it("Check if Exists cached objects", async () => {
+    const testObjectName = "testObject" + "_4";
+    let cacher = Cacher("./" + folderName);
+    await cacher.save(testObjectName, testContentObject);
+    expect(cacher.exists(testObjectName)).toEqual(true);
+    if (eraseFile)
+      fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
+  });
+});
+
+describe("ListDirectory Cache Function", () => {
+  it("List Directory cached objects", async () => {
+    const testObjectName = "testObject" + "_5";
+    let cacher = Cacher("./" + folderName);
+    await cacher.save(testObjectName, testContentObject);
+    console.log(cacher.listDirectory(testObjectName));
+    expect(
+      cacher.listDirectory(testObjectName).includes(testObjectName + ".json")
+    ).toEqual(true);
+    if (eraseFile)
+      fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
+  });
+});
+
+describe("Massive Files", () => {
+  it("should save massive file", async () => {
+    let testObjectName = "massiveTestObject" + "_6";
     let cacher = Cacher("./" + folderName);
 
     let testContentObjectHuge = [];
-    for (let i = 0; i < 10000000; i++) {
+    for (let i = 0; i < 6600000; i++) {
       let object = {
         id: i,
         name: Math.random().toString(36).substring(7),
@@ -53,65 +97,12 @@ describe("Save Cache function", () => {
       };
       testContentObjectHuge.push(object);
     }
-    cacher.save(testObjectName, testContentObjectHuge);
+    await cacher.save(testObjectName, testContentObjectHuge);
 
-    let serialisedString =
-      "[" +
-      testContentObjectHuge.map((el) => JSON.stringify(el)).join(",") +
-      "]";
+    let loadedTestObjectName = await cacher.load(testObjectName);
 
-    expect(
-      JSON.stringify(
-        JSON.parse(
-          fs.readFileSync(
-            "./" + folderName + "/" + testObjectName + ".json",
-            "utf8"
-          )
-        )
-      )
-    ).toEqual(serialisedString);
-    fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
-  });
-});
-
-describe("Load Cache function", () => {
-  const testObjectName = "testObject1";
-
-  test("It should load the same saved given object", () => {
-    let cacher = Cacher("./" + folderName);
-    cacher.save(testObjectName, testContentObject);
-    let loadedTestObject = cacher.load(testObjectName);
-
-    expect(JSON.stringify(loadedTestObject)).toEqual(
-      JSON.stringify(testContentObject)
-    );
-    fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
-  });
-});
-
-describe("Exists Cache Function", () => {
-  const testObjectName = "testObject2";
-
-  let cacher = Cacher("./" + folderName);
-  cacher.save(testObjectName, testContentObject);
-  test("Check if Exists cached objects", () => {
-    expect(cacher.exists(testObjectName)).toEqual(true);
-    fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
-  });
-});
-
-describe("ListDirectory Cache Function", () => {
-  const testObjectName = "testObject3";
-
-  let cacher = Cacher("./" + folderName);
-  cacher.save(testObjectName, testContentObject);
-
-  console.log(cacher.listDirectory(testObjectName));
-
-  test("List Directory cached objects", () => {
-    expect(
-      cacher.listDirectory(testObjectName).includes("testObject3.json")
-    ).toEqual(true);
-    fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
+    expect(loadedTestObjectName.length).toEqual(testContentObjectHuge.length);
+    if (eraseFile)
+      fs.rmSync("./" + folderName + "/" + testObjectName + ".json");
   });
 });

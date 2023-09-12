@@ -19,6 +19,9 @@
 
 import fs from "fs";
 import Path from "path";
+import json from "big-json";
+import { JsonStreamStringify } from "json-stream-stringify";
+// import JSONStream from "JSONStream";
 
 // Using TS syntax to export function https://stackoverflow.com/a/55945250
 export = function Cacher(defaultFolder: string, isVerbose: boolean = false) {
@@ -28,17 +31,62 @@ export = function Cacher(defaultFolder: string, isVerbose: boolean = false) {
   }
   const folder = defaultFolder;
   return {
-    save: function (filename: string, object: any) {
+    save: async function (
+      filename: string,
+      object: any,
+      forceStream: boolean = false
+    ): Promise<void> {
       if (VERBOSE) {
         console.log("Saving", filename);
       }
-      fs.writeFileSync(
-        Path.join(folder, filename + ".json"),
-        JSON.stringify(object, null, 2),
-        { encoding: "utf8", flag: "w" }
-      );
-      if (VERBOSE) {
-        console.log("Saved", filename);
+      let filePath = Path.join(folder, filename + ".json");
+
+      if (forceStream !== true) {
+        try {
+          // Try the old way for speed.
+          fs.writeFileSync(filePath, JSON.stringify(object, null, 2), {
+            encoding: "utf8",
+            flag: "w",
+          });
+          return;
+        } catch (e: any) {
+          if (
+            e.message === "Invalid string length" &&
+            e.name === "RangeError"
+          ) {
+            forceStream = true;
+          } else {
+            throw e;
+          }
+        }
+      }
+
+      if (forceStream === true) {
+        console.log("Trying to save", filename, "as stream");
+
+        return await new Promise((resolve, reject) => {
+          // Create a JsonStreamStringify instance to serialize the object
+          const stringifyStream = new JsonStreamStringify(object);
+
+          // Create a write stream to save the JSON data
+          const writeStream = fs.createWriteStream(filePath, {
+            encoding: "utf8",
+          });
+
+          stringifyStream.pipe(writeStream);
+
+          writeStream.on("finish", () => {
+            writeStream.end();
+            if (VERBOSE) {
+              console.log("Saved", filename);
+            }
+            resolve();
+          });
+
+          writeStream.on("error", (error) => {
+            reject(error);
+          });
+        });
       }
     },
     /**
@@ -46,12 +94,53 @@ export = function Cacher(defaultFolder: string, isVerbose: boolean = false) {
      * @param filename
      * @returns {any}
      */
-    load: function (filename: string) {
+    load: async function (
+      filename: string,
+      forceStream: boolean = false
+    ): Promise<any> {
       let filePath = Path.join(folder, filename + ".json");
       if (fs.existsSync(filePath)) {
-        return JSON.parse(
-          fs.readFileSync(filePath, { encoding: "utf8" }).toString()
-        );
+        if (forceStream !== true) {
+          try {
+            // Try the normal way first for speed.
+            return JSON.parse(
+              fs.readFileSync(filePath, { encoding: "utf8" }).toString()
+            );
+          } catch (e: any) {
+            if (
+              e.message === "Invalid string length" &&
+              e.name === "RangeError"
+            ) {
+              forceStream = true;
+            } else {
+              throw e;
+            }
+          }
+        }
+
+        if (forceStream === true) {
+          console.log("Trying to load", filename, "as stream");
+          let dataToReturn: any[] = await new Promise((resolve, reject) => {
+            let data: any[] = [];
+            const readStream = fs.createReadStream(filePath);
+            const parseStream: any = json.createParseStream();
+            parseStream.on("data", function (pojo: any) {
+              data.push(pojo);
+            });
+            readStream.pipe(parseStream);
+            parseStream.on("end", function () {
+              resolve(data);
+            });
+            parseStream.on("error", function (error: Error) {
+              reject(error);
+            });
+          });
+          // If data contains two arrays, then return the children array
+          if (dataToReturn.length === 1 && Array.isArray(dataToReturn[0])) {
+            dataToReturn = dataToReturn[0];
+          }
+          return dataToReturn;
+        }
       } else {
         return null;
       }
